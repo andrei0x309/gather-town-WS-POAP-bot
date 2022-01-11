@@ -1,0 +1,7 @@
+.env
+logs
+yarn-error.log
+node_modules
+currentLINKS.db
+usedLINKS.db
+mockLINKS.db
