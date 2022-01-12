@@ -9,7 +9,7 @@ dotenv.config();
 global.WebSocket = webSocket;
 
 const API_KEY = process.env.GATHER_API_KEY;
-const GATHER_SPACE = process.env.GATHER_SPACE_TEST
+const GATHER_SPACE = process.env.GATHER_SPACE_YUP
 
 const currentClaimLinks = fs.readFileSync('currentLINKS.db', 'utf8');
 const usedClaimLinks = fs.readFileSync('usedLINKS.db', 'utf8');
@@ -60,14 +60,14 @@ const flushUsedClaimLinks = () => {
 
 class GatherPOAPBot {
 
-    connected = false;
-    space = undefined;
-    botId = 'w9TPUKsBkOOasECrD4yaSxefkir1';
-    game = undefined;
-    debugLog = false;
-    enteredSpace = false;
-    usersPOAPSent = [];
-    authorizedUsers = [ 'fW6l5sr0czZrXOpZQ5vvaslqOuQ2'];
+    private connected = false;
+    private space = undefined;
+    private botId = 'w9TPUKsBkOOasECrD4yaSxefkir1';
+    private game = undefined;
+    private debugLog = false;
+    private enteredSpace = false;
+    private usersPOAPSent = [];
+    private authorizedUsers = [ 'fW6l5sr0czZrXOpZQ5vvaslqOuQ2'];
     
     constructor( apiKey = API_KEY, gatherSpace = GATHER_SPACE, debugLog = true ) {
         this.space = gatherSpace;
