@@ -9,7 +9,7 @@ dotenv.config()
 global.WebSocket = webSocket
 
 const API_KEY = process.env.GATHER_API_KEY
-const GATHER_SPACE = process.env.GATHER_SPACE_YUP
+const GATHER_SPACE = process.env.GATHER_SPACE
 
 const currentClaimLinks = fs.readFileSync('currentLINKS.db', 'utf8')
 const usedClaimLinks = fs.readFileSync('usedLINKS.db', 'utf8')
