@@ -1,4 +1,4 @@
-#YUP POAP GATHER BOT
+## YUP POAP GATHER BOT
 
 Bot used to send POAP links:
 
