@@ -11,6 +11,18 @@ global.WebSocket = webSocket
 const API_KEY = process.env.GATHER_API_KEY
 const GATHER_SPACE = process.env.GATHER_SPACE
 
+if (!fs.existsSync('logs')) {
+  fs.mkdirSync('logs')
+}
+
+if (!fs.existsSync('usedLINKS.db')) {
+  fs.writeFileSync('usedLINKS.db', '')
+}
+
+if (!fs.existsSync('currentLINKS.db')) {
+  fs.writeFileSync('currentLINKS.db', '')
+}
+
 const currentClaimLinks = fs.readFileSync('currentLINKS.db', 'utf8')
 const usedClaimLinks = fs.readFileSync('usedLINKS.db', 'utf8')
 
