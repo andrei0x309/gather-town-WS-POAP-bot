@@ -69,6 +69,98 @@ const logger = createLogger(false, {
   timestampFormat: 'YY-MM-DD HH:mm:ss.SSS'
 })
 
+const poapFarmers = [
+  'poap.love',
+  'Pineapple',
+  'Sukey',
+  'wawawell',
+  '我是你二大爷',
+  'Asc',
+  'nathanzhang',
+  'myIvan',
+  'booot',
+  '王者的',
+  'lalalla',
+  'stella',
+  'herrz',
+  'yinfei#6360',
+  'daxian',
+  'ethfly',
+  'yangchaoyue',
+  'nanci',
+  'lily',
+  'Jack',
+  'lilei',
+  'rongzhang',
+  'tom',
+  'ivan520',
+  'timedao',
+  'chairty',
+  'liaowang',
+  'aiblockchain',
+  'LIU',
+  'kio',
+  'kaka',
+  'YUP POAP BOT',
+  'hyman',
+  'nimokes',
+  'kiwi',
+  'LILY',
+  'Metamoon',
+  'hyamn',
+  '王者荣耀',
+  'yyds',
+  'dd',
+  'hanguoren',
+  'xswl',
+  'eleven',
+  'rourou',
+  'houyishiwo',
+  'yule',
+  'kikit',
+  'buni',
+  'victor',
+  'Tony',
+  'zhongwen',
+  'lanse',
+  'tuheu',
+  'shufu',
+  'nathanzhang',
+  'rain',
+  'yinfei',
+  'abun',
+  'meiner',
+  'morning',
+  'access',
+  'weidde',
+  'superr',
+  'haare',
+  'kathi',
+  'Alen',
+  'JackMan',
+  'Anja',
+  'laura',
+  'masiwei',
+  'yangchaoyue',
+  'dexian',
+  'woshishui',
+  'xdsa',
+  'xiansheng',
+  'renwoxiayao',
+  'harbin',
+  'Sukey',
+  'TonyB',
+  'sanjin'
+]
+
+const whiteList = [
+  'PBJ 🥪',
+  'nir',
+  'nir.eth',
+  'Nir',
+  'NIR',
+  'Nir.eth'
+]
 class GatherPOAPBot {
   constructor (apiKey = API_KEY, gatherSpace = GATHER_SPACE, debugLog = true) {
     this.connected = false
@@ -130,30 +222,47 @@ class GatherPOAPBot {
     this.enteredSpace = true
   }
 
-  sendPoapToUsers (newUsers = false) {
+  sendPoapToUsers (newUsers = false, near = false) {
     const getUsers = () => Object.keys(this.game.players).map(key => { const player = this.game.players[key]; player.id = key; return player }).filter(player => isFinite(player.x))
     const filterExistingUsers = (users) => users.filter(user => !this.usersPOAPSent.includes(user.id))
     const users = newUsers ? filterExistingUsers(getUsers()) : getUsers()
     console.log(this.game.players)
     let i = 0
+    let z = 0
+    const startSend = performance.now()
+    const REGEX_CHINESE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/
     users.forEach(async user => {
       const link = memClaimLinksArr[i]
-      memUsedClaimLinksArr.push(link)
-      const code = link.substring(link.lastIndexOf('/') + 1)
-      const msg = ` [ATTENTION: ${user.name} ] Unique POAP claim links is: [ ${link} ] Code [ ${code} ] is automatically used for claim. `
-      logger.info(msg)
-      if (user.id) {
-        try {
-          this.game.chat(`${user.id}`, [], user.map, msg)
-        } catch (err) {
-          console.log('Error:', err)
+      let msg
+      if ((poapFarmers.includes(user.name) || user.name.length < 4 || user.name.match(REGEX_CHINESE)) && !whiteList.includes(user.name)) {
+        msg = `${user.name} is a poap farmer!`
+        z++
+      } else {
+        memUsedClaimLinksArr.push(link)
+        const code = link.substring(link.lastIndexOf('/') + 1)
+        msg = `[ATTENTION: ${user.name} ] Unique POAP claim links is: [ ${link} ] Code [ ${code} ] is automatically used for claim. `
+        if (user.id) {
+          try {
+            this.game.chat(`${user.id}`, [], user.map, msg)
+          } catch (err) {
+            console.log('Error:', err)
+          }
+          this.usersPOAPSent.push(user.id)
+          i++
         }
-        this.usersPOAPSent.push(user.id)
       }
-      i++
+      logger.info(`${msg} - UserID: ${user.id}`)
       await new Promise(resolve => setTimeout(resolve, 100))
     })
     flushUsedClaimLinks()
+    const endSend = performance.now()
+    const logMsg = `STATS: POAP sent to ${i} users. Detected bots: ${z}. Processing time: ${(endSend - startSend) / 1000} seconds.`
+    const encMsg = 'INFO: Be sure to claim your POAP using the link you have recived in DM.'
+    logger.info(logMsg)
+    this.game.chat('GLOBAL_CHAT', [], '', logMsg)
+    setTimeout(() => {
+      this.game.chat('GLOBAL_CHAT', [], '', encMsg)
+    }, 200)
   }
 }
 
