@@ -227,14 +227,17 @@ class GatherPOAPBot {
     const filterExistingUsers = (users) => users.filter(user => !this.usersPOAPSent.includes(user.id))
     const users = newUsers ? filterExistingUsers(getUsers()) : getUsers()
     console.log(this.game.players)
-    let i = 0
-    let z = 0
+    let i = 0; let z = 0; let y = 0
     const startSend = performance.now()
     const REGEX_CHINESE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/
     users.forEach(async user => {
       const link = memClaimLinksArr[i]
       let msg
-      if ((poapFarmers.includes(user.name) || user.name.length < 4 || user.name.match(REGEX_CHINESE)) && !whiteList.includes(user.name)) {
+
+      if (!user.isSignedIn) {
+        y++
+        msg = `${user.id} is not signed in.`
+      } else if ((poapFarmers.includes(user.name) || user.name.length < 4 || user.name.match(REGEX_CHINESE)) && !whiteList.includes(user.name)) {
         msg = `${user.name} is a poap farmer!`
         z++
       } else {
@@ -256,8 +259,12 @@ class GatherPOAPBot {
     })
     flushUsedClaimLinks()
     const endSend = performance.now()
-    const logMsg = `STATS: POAP sent to ${i} users. Detected bots: ${z}. Processing time: ${(endSend - startSend) / 1000} seconds.`
-    const encMsg = 'INFO: Be sure to claim your POAP using the link you have recived in DM.'
+    const logMsg = `---- STATS: POAP sent to ${i} users. Detected bots: ${z}. ---- \n
+    ---- Users skipped due to low trust: ${y}. ---- \n
+    ---- Processing time: ${(endSend - startSend) / 1000} seconds.  ---- \n`
+    const encMsg = `---- \n
+    INFO: Be sure to claim your POAP using the link you have recived in DM.
+    ---- \n`
     logger.info(logMsg)
     this.game.chat('GLOBAL_CHAT', [], '', logMsg)
     setTimeout(() => {
