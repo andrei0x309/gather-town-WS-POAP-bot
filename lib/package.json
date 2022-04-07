@@ -1,7 +1,7 @@
 {
-  "name": "poap-gather-ws-bot-full",
+  "name": "poap-gather-ws-bot-;ib",
   "version": "1.0.0",
-  "description": "Gather Bot for DM links to users using WS",
+  "description": "Gather Bot Lib",
   "main": "bot.js",
   "type": "module",
   "scripts": {

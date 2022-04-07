@@ -1,5 +1,6 @@
 .env
 logs
+db
 yarn-error.log
 node_modules
 currentLINKS.db
