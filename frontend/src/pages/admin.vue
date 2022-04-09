@@ -27,6 +27,28 @@
           navTabsClass="adminMenu"
         >
           <o-tab-item label="Connect Status" value="connect-tab">
+          <div class="sm:col-span-2 flex items-center">
+          <button
+            class="inline-block m-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="connectBot()"
+          >
+            Connect Bot
+          </button>
+            <button
+            class="inline-block m-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="disconnectBot()"
+          >
+            Disconnect Bot
+          </button>
+          </div>
+          <div class="sm:col-span-2 flex items-center">
+                    <button
+            class="inline-block m-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="checkStatus()"
+          >
+            Check status
+          </button>
+        </div>        
 
           </o-tab-item>
           <o-tab-item label="Teleport Locations" value="teleport-tab">
@@ -36,6 +58,50 @@
 
           </o-tab-item>
           <o-tab-item label="API and SPACE" value="api-tab">
+
+            <div class="max-w-screen-2xl px-4 md:px-8 mx-auto">
+      <!-- text - start -->
+      <div class="mb-10 md:mb-16">
+        <h2 class="text-2xl lg:text-3xl font-bold text-center mb-4 md:mb-6">
+          API and SPACE
+        </h2>
+      </div>
+      <!-- text - end -->
+
+      <!-- form - start -->
+      <form class="max-w-screen-md grid sm:grid-cols-2 gap-4 mx-auto">
+        <div class="sm:col-span-2">
+          <label for="claim-year" class="inline-block text-sm sm:text-base mb-2"
+            >Gather Space URI</label
+          >
+          <input
+            v-model="inputGatherSpace"
+            name="claim-year"
+            class="w-full bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          />
+        </div>
+
+        <div class="sm:col-span-2">
+          <label for="claim-year" class="inline-block text-sm sm:text-base mb-2"
+            >Api Key</label
+          >
+          <input
+            v-model="inputApiKey"
+            name="claim-year"
+            class="w-full bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          />
+        </div>
+        <div class="sm:col-span-2 flex justify-between items-center">
+          <button
+            class="inline-block bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="saveSpaceAndApi"
+          >
+            Save
+          </button>
+        </div>
+      </form>
+      <!-- form - end -->
+    </div>
 
           </o-tab-item>
           <o-tab-item label="Settings" value="settings-tab">
@@ -147,8 +213,7 @@ import Alert from "@/components/content/alert.vue";
 import { useRoute, useRouter } from "vue-router";
 import { onBeforeMount, inject, reactive, computed, ref, watch, defineComponent, Ref } from "vue";
 import { HeadObject, useHead } from "@vueuse/head";
-// import { postData } from "../utils/request";
-import { getData } from "../utils/request";
+import { getData, postData } from "../utils/request";
 
 export default defineComponent({
   name: "AdminDashboard",
@@ -181,6 +246,9 @@ export default defineComponent({
       confrimDialogResult.value = true;
       (confirmDialogPromiseRes.value as unknown as () => void)();
     };
+
+    const inputGatherSpace = ref('')
+    const inputApiKey = ref('')
 
     // const confirmDialogOpenFn = async (title: string, message: string) => {
     //   confirmDialogTitle.value = title;
@@ -221,37 +289,89 @@ export default defineComponent({
     const route = useRoute();
     const router = useRouter();
 
-    // const showAlertOk = (title: string, message: string) => {
-    //   alertHidden.value = false;
-    //   alertTitle.value = title;
-    //   alertMessage.value = message;
-    //   alertType.value = "success";
-    // };
+    const showAlertOk = (title: string, message: string) => {
+      alertHidden.value = false;
+      alertTitle.value = title;
+      alertMessage.value = message;
+      alertType.value = "success";
+    };
 
-    // const showAlertError = (title: string, message: string) => {
-    //   alertHidden.value = false;
-    //   alertTitle.value = title;
-    //   alertMessage.value = message;
-    //   alertType.value = "error";
-    // };
+    const showAlertError = (title: string, message: string) => {
+      alertHidden.value = false;
+      alertTitle.value = title;
+      alertMessage.value = message;
+      alertType.value = "error";
+    };
 
     const siteData = reactive({
       title: `Gather Bot Manager`,
       description: `Gather Bot Manager`,
     });
 
-    // const postDataWithAuth = async (url: string, data?: Record<string, unknown>) => {
-    //   return await postData(url, data, {
-    //     "x-secret": localStorage.getItem('secret'),
-    //     "x-iv": localStorage.getItem('iv'),
-    //   });
-    // };
+    const postDataWithAuth = async (url: string, data?: Record<string, unknown>) => {
+      return await postData(url, data, {
+        "x-secret": localStorage.getItem('secret'),
+        "x-iv": localStorage.getItem('iv'),
+      });
+    };
 
     const logout = async () => {
       localStorage.setItem('secret', ''),
       localStorage.setItem('iv', ''),
       router.push("/login");
     };
+    
+    const getSpaceAndApi = async () => {
+      const req = await postDataWithAuth(`${endpointBase}/logged/gather-space-api-key-get`);
+      if(!req.ok){
+        showAlertError('Error', 'Could not get gather space and api key');
+        return;
+      }
+      const data = await req.json()
+      console.log(data)
+      inputGatherSpace.value = data.gatherSpace;
+      inputApiKey.value = data.apiKey;
+    }
+
+    const saveSpaceAndApi = async () => {
+      const data = {
+        gatherSpace: inputGatherSpace.value,
+        apiKey: inputApiKey.value,
+      }
+      const res = await postDataWithAuth(`${endpointBase}/logged/gather-space-api-key-set`, data);
+      if (res.ok) {
+        showAlertOk('Success', 'Space and API key saved');
+      } else {
+        showAlertError('Error', 'Error saving space and API key');
+      }
+    }
+
+    const connectBot = async () => {
+      const res = await postDataWithAuth(`${endpointBase}/logged/connect-to-space`, {});
+      if (res.ok) {
+        showAlertOk('Success', 'Space and API key saved');
+      } else {
+        showAlertError('Error', 'Error saving space and API key');
+      }
+    }
+
+    const disconnectBot = async () => {
+      const res = await postDataWithAuth(`${endpointBase}/logged/disconnect-from-space`, {});
+      if (res.ok) {
+        showAlertOk('Success', 'Space and API key saved');
+      } else {
+        showAlertError('Error', 'Error saving space and API key');
+      }
+    }
+
+    const checkStatus = async () => {
+      const res = await postDataWithAuth(`${endpointBase}/logged/check-status`, {});
+      if (res.ok) {
+        showAlertOk('Success', 'Space and API key saved');
+      } else {
+        showAlertError('Error', 'Error saving space and API key');
+      }
+    }
 
     // const getClaimPassword = async () => {
     //   const res = await postDataWithAuth(`${endpointBase}/get-claim-pass`);
@@ -333,6 +453,10 @@ export default defineComponent({
           case "connect-tab":
             editPastEventModal.value = false;
             pastEventEditId.value = null;
+
+
+
+            
             break;
 
           case "teleport-tab":
@@ -345,7 +469,11 @@ export default defineComponent({
             break;
 
           case "api-tab":
-            // getClaimPassword();
+            (async () => {
+            await getSpaceAndApi();
+            console.log(inputGatherSpace.value);
+            })()
+           
 
             break;
             case "settings-tab":
@@ -442,6 +570,12 @@ export default defineComponent({
       currentClaimLink,
       origin,
       animateCopyLink,
+      inputGatherSpace,
+      inputApiKey,
+      saveSpaceAndApi,
+      connectBot,
+      disconnectBot,
+      checkStatus
     };
   },
 })

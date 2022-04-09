@@ -1,8 +1,13 @@
 import fastify from 'fastify'
 import fastCors from 'fastify-cors'
+import { fileURLToPath } from 'url'
 import Conf from 'conf'
 import path from 'path'
 import crypto from 'crypto'
+import GatherPOAPBot from '../lib/index.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const PORT = process.env.PORT || 4552
 
@@ -12,6 +17,8 @@ const app = fastify({
 })
 
 const cwd = path.resolve(path.join(__dirname, '..', 'db'))
+
+let gatherBot = new GatherPOAPBot(cwd)
 
 const mainStore = new Conf({ configName: 'main', cwd })
 const teleportStore = new Conf({ configName: 'teleport', cwd })
@@ -132,6 +139,37 @@ app.all('/logged/:command', {
   handler: async (req, reply) => {
     const command = req.params.command
     switch (command) {
+      case 'connect-to-space': {
+        if (!gatherBot || !gatherBot.isConnected) {
+          gatherBot = new GatherPOAPBot(cwd)
+          console.log('here')
+          do {
+            await new Promise((resolve) => {
+              setTimeout(resolve, 100)
+            })
+          } while (!gatherBot)
+          await gatherBot.gatherConnect()
+        } else {
+          await gatherBot.gatherConnect()
+        }
+        reply.send({
+          success: true
+        })
+        break
+      }
+      case 'disconnect-from-space': {
+        gatherBot.gatherDisconnect()
+        gatherBot = null
+        reply.send({
+          success: true
+        })
+        break
+      }
+      case 'check-status': {
+        reply.send({
+          status: gatherBot.isConnected()
+        })
+      }
       case 'teleport-get': {
         const teleport = teleportStore.get('teleport', null)
         reply.send({
@@ -166,8 +204,32 @@ app.all('/logged/:command', {
         })
         break
       }
-      default: {
+      case 'gather-space-api-key-get': {
+        const apiKey = mainStore.get('apiKey', null)
+        const gatherSpace = mainStore.get('gatherSpace', null)
         reply.send({
+          apiKey,
+          gatherSpace
+        })
+      }
+      case 'gather-space-api-key-set': {
+        const apiKey = req.body.apiKey
+        const gatherSpace = req.body.gatherSpace
+        if (!apiKey || !gatherSpace) {
+          reply.status(401).send({
+            error: 'Missing required fields'
+          })
+          return
+        }
+        mainStore.set('apiKey', apiKey)
+        mainStore.set('gatherSpace', gatherSpace)
+        reply.send({
+          success: true
+        })
+      }
+
+      default: {
+        reply.status(401).send({
           error: 'Unknown command'
         })
       }

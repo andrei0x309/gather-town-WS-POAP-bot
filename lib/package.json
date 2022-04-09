@@ -1,8 +1,8 @@
 {
-  "name": "poap-gather-ws-bot-;ib",
+  "name": "poap-gather-ws-bot-lib",
   "version": "1.0.0",
   "description": "Gather Bot Lib",
-  "main": "bot.js",
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -12,6 +12,7 @@
   "license": "MIT",
   "dependencies": {
     "@gathertown/gather-game-client": "^32.0.0",
+    "conf": "^10.1.2",
     "dotenv": "^10.0.0",
     "isomorphic-ws": "^4.0.1",
     "simple-node-logger": "^21.8.12",
