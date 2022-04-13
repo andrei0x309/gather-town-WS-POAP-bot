@@ -10,12 +10,13 @@ import {
     Tabs,
     Table,
     Modal,
-    Skeleton
+    Skeleton,
+    Switch
 } from "@oruga-ui/oruga-next";
 import "@oruga-ui/oruga-next/dist/oruga.min.css";
 import { createPinia } from 'pinia'
 
-const ENDPOINTBASE = "http://localhost:4552";
+const ENDPOINTBASE = import.meta.env.PROD ? `${location.protocol}//${location.host}` : "http://localhost:4552";
 
 createApp(App)
     .use(router)
@@ -26,6 +27,7 @@ createApp(App)
     .use(Modal)
     .use(Skeleton)
     .use(Table)
+    .use(Switch)
     .use(createPinia())
     .provide("endPointBase", ENDPOINTBASE)
     .provide('routes', routes)

@@ -1,7 +1,7 @@
 <template>
-  <div class="dark:bg-gray-800 dark:text-white bg-white py-6 sm:py-8 lg:py-12">
+  <div class="dark:bg-gray-800 dark:text-white py-6 sm:py-8 lg:py-12">
     <div
-      class="glass max-w-screen-lg px-4 md:px-8 mx-auto text-gray-800 dark:text-white"
+      class="glass max-w-screen-lg px-4 md:px-8 mx-auto text-gray-800 dark:text-white light:bg-white"
       style="min-height: 60vh"
     >
       <div class="mb-10 md:mb-16">
@@ -27,38 +27,154 @@
           navTabsClass="adminMenu"
         >
           <o-tab-item label="Connect Status" value="connect-tab">
+          <SimpleSpinner :show="simpleSpinnerShow" :color="theme" size="0.7rem" />
+          <div class="sm:col-span-2 flex items-center">
+              <p class="m-8">Status <b>  <span v-if="connectStatus" style="color:green">CONECTED</span> <span v-else style="color:red">Disconnected</span>  </b></p>
+          </div>       
           <div class="sm:col-span-2 flex items-center">
           <button
+            :disabled="connectStatus"
             class="inline-block m-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            :style="connectStatus ? 'opacity: 0.4' : ''"
             @click.prevent="connectBot()"
           >
             Connect Bot
           </button>
             <button
+            :disabled="!connectStatus"
             class="inline-block m-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            :style="!connectStatus ? 'opacity: 0.4' : ''"
             @click.prevent="disconnectBot()"
           >
             Disconnect Bot
           </button>
           </div>
-          <div class="sm:col-span-2 flex items-center">
-                    <button
-            class="inline-block m-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
-            @click.prevent="checkStatus()"
-          >
-            Check status
-          </button>
-        </div>        
-
           </o-tab-item>
           <o-tab-item label="Teleport Locations" value="teleport-tab">
-
+        <div v-for="(v,k) in teleportsInputs" :key="k" class="m-4 p-4" style="border: 1px solid #ccc;" >
+        <div class="sm:col-span-2 pt-2">
+          <label for="teleportName" class="inline-block text-sm sm:text-base mb-2"
+            >Teleport Name (responds to /bot teleport teleport-name)</label
+          >
+          <input
+            v-model="v.teleportName"
+            name="teleportName"
+            class="w-full bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          />
+        </div>
+        <div class="sm:col-span-2 pt-2">
+          <label for="map-name" class="inline-block text-sm sm:text-base mb-2"
+            >Map name ( you can use /bot get-coords)</label
+          >
+          <input
+            v-model="v.map"
+            name="map-name"
+            class="w-full bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          />
+        </div>
+        <div class="sm:col-span-2 pt-2">
+          <label for="coords" class="block text-sm sm:text-base mb-2"
+            >Teleport coordonates ( you can use /bot get-coords)</label
+          >
+          x:
+          <input
+            v-model="v.x"
+            name="coords"
+            class="w-1/3 bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          />
+          y:
+          <input
+            v-model="v.y"
+            name="coords"
+            class="w-1/3 bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          />
+        </div>
+         <div class="sm:col-span-2 pt-2">
+         <o-switch v-model="v.tokenGated" :rounded="false" position="right" size="medium" variant="success" >Token Gated</o-switch>
+         </div>
+         <div v-if="v.tokenGated">
+          <div class="sm:col-span-2 pt-2">
+          <label for="join-alias" class="inline-block text-sm sm:text-base mb-2"
+            >Join alias eg: (/bot join party) here party is the alias</label
+          >
+          <input
+            v-model="v.joinAlias"
+            name="join-alias"
+            class="w-full bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          />
+        </div>
+        <div class="sm:col-span-2 pt-2">
+          <label for="token-contract" class="inline-block text-sm sm:text-base mb-2"
+            >Token Contract to check for (currently polygon network)</label
+          >
+          <input
+            v-model="v.tokenContract"
+            name="token-contract"
+            class="w-full bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          />
+        </div>
+        <label for="am-tokens" class="inline-block text-sm sm:text-base mb-2"
+            >Ammount of Tokens Required</label
+          >
+          <input
+            v-model="v.tokenAmount"
+            name="am-tokens"
+            class="w-full bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          />
+        </div>
+        <div v-if="k > 0" class="sm:col-span-2 justify-between flex items-center">
+          <button
+            class="inline-block m-4 bg-red-500 hover:bg-red-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="removeTeleportEntry(k)"
+          >
+            Remove Entry
+          </button>
+         </div>
+         </div>
+          <div class="sm:col-span-2 justify-between flex items-center">
+          <button
+            class="inline-block m-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="addNewTeleportEntry()"
+          >
+            Add New Teleport
+          </button>
+            <button
+            class="inline-block m-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="setTeleports()"
+          >
+            Save All
+          </button>
+          </div>
           </o-tab-item>
           <o-tab-item label="POAP Links" value="poap-tab">
-
+          <div class="m-4 p-4" style="border: 1px solid #ccc;">
+                <div class="mb-10 md:mb-16">
+        <h2 class="text-2xl lg:text-3xl font-bold text-center mb-4 md:mb-6">
+          Add Secret POAP links to distribute
+        </h2>
+      </div>
+            <div class="sm:col-span-2">
+                    <label
+                      for="claim-links"
+                      class="inline-block text-sm sm:text-base mb-2"
+                      >Links One Per line*</label
+                    >
+                    <textarea
+                      v-model="claimLinksList"
+                      name="claim-links"
+                      class="w-full h-64 bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                    ></textarea>
+          </div>
+                  <div class="sm:col-span-2 flex justify-between items-center">
+          <button
+            class="inline-block bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="savePOAPLinks()"
+          >
+            Save
+          </button>
+        </div></div>
           </o-tab-item>
           <o-tab-item label="API and SPACE" value="api-tab">
-
             <div class="max-w-screen-2xl px-4 md:px-8 mx-auto">
       <!-- text - start -->
       <div class="mb-10 md:mb-16">
@@ -94,7 +210,7 @@
         <div class="sm:col-span-2 flex justify-between items-center">
           <button
             class="inline-block bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
-            @click.prevent="saveSpaceAndApi"
+            @click.prevent="saveSpaceAndApi()"
           >
             Save
           </button>
@@ -105,11 +221,45 @@
 
           </o-tab-item>
           <o-tab-item label="Settings" value="settings-tab">
-
+        <div v-for="(v,k) in authUsersInputs" :key="k" class="m-4 p-4" style="border: 1px solid #ccc;" >
+        <div class="sm:col-span-2 pt-2">
+          <label for="auth-user" class="inline-block text-sm sm:text-base mb-2"
+            >Authorized User (access to privileged bot commands)</label
+          >
+          <input
+            v-model="v.user"
+            name="auth-user"
+            class="w-full bg-gray-50 text-gray-800 border focus:ring ring-indigo-300 rounded outline-none transition duration-100 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          />
+        </div>
+ 
+        <div v-if="k > 0" class="sm:col-span-2 justify-between flex items-center">
+          <button
+            class="inline-block m-4 bg-red-500 hover:bg-red-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="removeAuthUserEntry(k)"
+          >
+            Remove Entry
+          </button>
+         </div>
+          </div>
+          <div class="sm:col-span-2 justify-between flex items-center">
+          <button
+            class="inline-block m-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="addNewAuthUserEntry()"
+          >
+            Add New Authorized User
+          </button>
+          </div>
+            <button
+            class="inline-block m-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 focus-visible:ring ring-indigo-300 text-white text-sm md:text-base font-semibold text-center rounded-lg outline-none transition duration-100 px-8 py-3 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+            @click.prevent="saveSettings()"
+          >
+            Save Settings
+          </button>
           </o-tab-item>
-          <o-tab-item label="Commands" value="commands-tab">
+          <!-- <o-tab-item label="Commands" value="commands-tab">
 
-          </o-tab-item>
+          </o-tab-item> -->
           <o-tab-item label="Log out" value="log-out"> &nbsp; </o-tab-item>
         </o-tabs>
       </section>
@@ -208,23 +358,25 @@
 </template>
 <script lang="ts">
 import Alert from "@/components/content/alert.vue";
+import SimpleSpinner from "@/components/content/simple-spinner.vue";
 // import SimpleSpinner from "@/components/contents/simple-spinner.vue";
 // import AddEditPastEvent from "@/components/admin/AddEditPastEvent";
 import { useRoute, useRouter } from "vue-router";
-import { onBeforeMount, inject, reactive, computed, ref, watch, defineComponent, Ref } from "vue";
+import { onBeforeMount, onMounted, inject, reactive, computed, ref, watch, defineComponent, Ref } from "vue";
 import { HeadObject, useHead } from "@vueuse/head";
 import { getData, postData } from "../utils/request";
+import { useMainStore } from '@/store/main'
 
 export default defineComponent({
   name: "AdminDashboard",
   components: {
     Alert,
-    // SimpleSpinner,
+    SimpleSpinner,
   },
   setup() {
     const endpointBase: string = inject("endPointBase") as string;
-    const origin = "https://yup-poap.pages.dev";
-    const curentTab = ref("add-claim-links");
+    const store = useMainStore()
+    const curentTab = ref("connect-tab");
 
     const editPastEventModal = ref(false);
     const viewClaimLinkModal = ref(false);
@@ -234,6 +386,32 @@ export default defineComponent({
     const confirmDialogMessage = ref("");
     const confrimDialogResult = ref(false);
     const confirmDialogPromiseRes = ref(null);
+    const theme = ref(store.theme)
+
+    const defaultTeleportEntry = {
+      teleportName: "",
+      map: "",
+      x: "0",
+      y: "0",
+      tokenGated: false,
+      joinAlias: "happy-hour",
+      tokenContract: "0x086373fad3447f7f86252fb59d56107e9e0faafa",
+      tokenAmount: "500",
+    }
+
+    const defaultAuthUsers = {
+      user: 'fW6l5sr0czZrXOpZQ5vvaslqOuQ2'
+    }
+
+    const teleportsInputs = reactive([{
+      ...defaultTeleportEntry
+    }]);
+
+   const authUsersInputs = reactive([{
+      ...defaultAuthUsers
+   }]);
+
+    const connectStatus = ref(false);
 
     const confirmDialogCancelFn = () => {
       confirmDialogOpen.value = false;
@@ -262,14 +440,10 @@ export default defineComponent({
     //   return confrimDialogResult.value;
     // };
 
-    const claimLinksDay = ref("");
-    const claimLinksMonth = ref("");
-    const claimLinksYear = ref("");
+
     const claimLinksList = ref("");
-    const currentClaimLink = ref({
-      claimDate: "",
-      links: [],
-    });
+
+
     const animateCopyLink = ref(false);
 
     const dbClaimLinks = ref([]);
@@ -322,7 +496,7 @@ export default defineComponent({
     };
     
     const getSpaceAndApi = async () => {
-      const req = await postDataWithAuth(`${endpointBase}/logged/gather-space-api-key-get`);
+      const req = await postDataWithAuth(`${endpointBase}/api/logged/gather-space-api-key-get`);
       if(!req.ok){
         showAlertError('Error', 'Could not get gather space and api key');
         return;
@@ -338,7 +512,7 @@ export default defineComponent({
         gatherSpace: inputGatherSpace.value,
         apiKey: inputApiKey.value,
       }
-      const res = await postDataWithAuth(`${endpointBase}/logged/gather-space-api-key-set`, data);
+      const res = await postDataWithAuth(`${endpointBase}/api/logged/gather-space-api-key-set`, data);
       if (res.ok) {
         showAlertOk('Success', 'Space and API key saved');
       } else {
@@ -347,16 +521,16 @@ export default defineComponent({
     }
 
     const connectBot = async () => {
-      const res = await postDataWithAuth(`${endpointBase}/logged/connect-to-space`, {});
-      if (res.ok) {
-        showAlertOk('Success', 'Space and API key saved');
-      } else {
+      simpleSpinnerShow.value = true;
+      const res = await postDataWithAuth(`${endpointBase}/api/logged/connect-to-space`, {});
+      if (!res.ok) {
         showAlertError('Error', 'Error saving space and API key');
-      }
+     }
+     simpleSpinnerShow.value = false;
     }
 
     const disconnectBot = async () => {
-      const res = await postDataWithAuth(`${endpointBase}/logged/disconnect-from-space`, {});
+      const res = await postDataWithAuth(`${endpointBase}/api/logged/disconnect-from-space`, {});
       if (res.ok) {
         showAlertOk('Success', 'Space and API key saved');
       } else {
@@ -365,85 +539,161 @@ export default defineComponent({
     }
 
     const checkStatus = async () => {
-      const res = await postDataWithAuth(`${endpointBase}/logged/check-status`, {});
-      if (res.ok) {
-        showAlertOk('Success', 'Space and API key saved');
-      } else {
+      const res = await postDataWithAuth(`${endpointBase}/api/logged/check-status`, {});
+      if (!res.ok) {
         showAlertError('Error', 'Error saving space and API key');
+        return false;
+      }
+      const data = await res.json();
+      return data.status;
+    }
+
+    const getTeleports = async () => {
+      const res = await postDataWithAuth(`${endpointBase}/api/logged/teleports-get`, {});
+      if (!res.ok) {
+        showAlertError('Error', 'Error getting teleports');
+        return;
+      }
+      const data = await res.json();
+      if(!data.teleports){
+        showAlertError('Error', 'Error getting teleports');
+        return;
+      }
+      if(data.teleports.length > 0){
+        teleportsInputs.length = 0;
+        data.teleports.forEach((t: { teleportName: string; map: string; x: string; y: string; tokenGated: boolean; joinAlias: string; tokenContract: string; tokenAmount: string; }) => {
+          teleportsInputs.push(t);
+        });
       }
     }
 
-    // const getClaimPassword = async () => {
-    //   const res = await postDataWithAuth(`${endpointBase}/get-claim-pass`);
-    //   if (res.ok) {
-    //     claimPassword.value = (await res.json()).password;
-    //   } else showAlertError("Error", (await res.json()).error);
-    // };
+    const removeTeleportEntry = (index: number) => {
+      teleportsInputs.splice(index, 1);
+    }
 
-    // const claimPasswordChangeFn = async () => {
-    //   const res = await postDataWithAuth(`${endpointBase}/set-claim-pass`, {
-    //     password: claimPassword.value,
-    //   });
+    const addNewTeleportEntry = () => {
+      teleportsInputs.push({
+        ...defaultTeleportEntry
+      });
+    }
 
-    //   if (res.ok) showAlertOk("Success", "Claim password updated");
-    //   else showAlertError("Error", (await res.json()).error);
-    // };
+    const setTeleports = async () => {
+      const data = {
+        teleports: teleportsInputs
+      }
+      const res = await postDataWithAuth(`${endpointBase}/api/logged/teleports-set`, data);
+      if (!res.ok) {
+        showAlertError('Error', 'Error saving teleports');
+        return;
+      }
+      const reqRes = await res.json();
+      if(reqRes.error){
+        showAlertError('Error', reqRes.error);
+        return;
+      }else {
+        showAlertOk('Success', 'Teleports saved');
+      }
+    }
 
-    // const getDbClaimLinks = async () => {
-    //   const res = await postDataWithAuth(`${endpointBase}/get-claim-links`);
-    //   if (res.ok) {
-    //     dbClaimLinks.value = (await res.json()).data;
-    //   } else {
-    //     showAlertError("Error", (await res.json()).error);
-    //     return;
-    //   }
-    // };
+    const getSettings = async () => {
+      const res = await postDataWithAuth(`${endpointBase}/api/logged/settings-get`, {});
+      if (!res.ok) {
+        showAlertError('Error', 'Error getting settings');
+        return;
+      }
+      const data = await res.json();
+      if(!data.settings){
+        showAlertError('Error', 'Error getting settings');
+        return;
+      }
+      if(data.settings.authUsers && data.settings.authUsers.length > 0){
+        authUsersInputs.values = data.settings.authUsers.map( (user: string) => {
+          return { user }
+        })
+      }
+    }
 
-    // const addEditPastEventFn = async () => {
-    //   const isEdit = pastEventEditId.value !== null;
+    const removeAuthUserEntry = (index: number) => {
+      authUsersInputs.splice(index, 1);
+    }
 
-    //   if (
-    //     pastEventComponentData.value.url === "" ||
-    //     pastEventComponentData.value.date === "" ||
-    //     pastEventComponentData.value.description === ""
-    //   ) {
-    //     showAlertError("Error", "Please fill in all fields");
-    //     return;
-    //   }
+    const addNewAuthUserEntry = () => {
+      authUsersInputs.push(
+        {...defaultAuthUsers}
+      );
+    }
 
-    //   const url = isEdit
-    //     ? `${endpointBase}/edit-past-event`
-    //     : `${endpointBase}/add-past-event`;
+    const saveSettings = async () => {
+      const data = {
+        settings: {
+          authUsers: authUsersInputs.map( (user: { user: string }) => {
+            return user.user
+          })
+        }
+      }
+      postDataWithAuth(`${endpointBase}/api/logged/settings-set`, data)
+      .then( async (res) => {
+        if (!res.ok) {
+          showAlertError('Error', 'Error saving settings');
+          return;
+        }
+        const reqRes = await res.json();
+        if(reqRes.error){
+          showAlertError('Error', reqRes.error);
+          return;
+        }else {
+          showAlertOk('Success', 'Settings saved');
+        }
+      })
+    }
 
-    //   const defPayload = {
-    //     url: pastEventComponentData.value.url,
-    //     date: pastEventComponentData.value.date,
-    //     description: pastEventComponentData.value.description,
-    //   };
-
-    //   isEdit && (defPayload.id = pastEventEditId.value);
-
-    //   const res = await postDataWithAuth(url, defPayload);
-    //   if (res.ok) {
-    //     showAlertOk(
-    //       "Success",
-    //       isEdit ? "Past event edited" : "Past event added"
-    //     );
-    //     if (isEdit) {
-    //       dbPastEvents.value.splice(
-    //         dbPastEvents.value.findIndex(
-    //           (pastEvent) => pastEvent.id === pastEventEditId.value
-    //         ),
-    //         1,
-    //         { ...pastEventComponentData.value, id: pastEventEditId.value }
-    //       );
-    //     }
-    //   } else {
-    //     showAlertError("Error", (await res.json()).error);
-    //   }
-    // };
-
+    const getPOAPLinks = async () => {
+      const res = await postDataWithAuth(`${endpointBase}/api/logged/poap-links-get`, {});
+      if (!res.ok) {
+        showAlertError('Error', 'Error getting poap links');
+        return;
+      }
+      const data = await res.json();
+      if(!data.links){
+        showAlertError('Error', 'Error getting poap links');
+        return;
+      }
+      if(data.links.length > 0){
+        claimLinksList.value = data.poapLinks.join('\n');
+      }
+    }
     
+    
+    const savePOAPLinks = async() => {
+      const linksList = claimLinksList.value.replace(/\r\n/g, "\n");
+      const linksListArr = linksList.split("\n").map((link) => link.trim());
+
+      for (const link of linksListArr) {
+        try {
+          new URL(link);
+        } catch (e) {
+          showAlertError("Error", "One of the links is not a valid URL");
+          return;
+        }
+      }
+
+      const data = {
+        links: linksListArr
+      }
+      const res = await postDataWithAuth(`${endpointBase}/api/logged/poap-links-set`, data);
+      if (!res.ok) {
+        showAlertError('Error', 'Error saving POAP links');
+        return;
+      }
+      const reqRes = await res.json();
+      if(reqRes.error){
+        showAlertError('Error', reqRes.error);
+        return;
+      }else {
+        showAlertOk('Success', 'POAP links saved');
+      }
+    }
+ 
     watch(
       () => curentTab.value,
       (newValue) => {
@@ -451,33 +701,27 @@ export default defineComponent({
 
         switch (newValue) {
           case "connect-tab":
-            editPastEventModal.value = false;
-            pastEventEditId.value = null;
-
-
-
+            checkStatus().then((status) => {
+               connectStatus.value = status;
+            });
             
             break;
 
           case "teleport-tab":
-            // getDbClaimLinks();
+            getTeleports();
 
             break;
 
           case "poap-tab":
-            // getPastEvents();
+            getPOAPLinks();
             break;
 
           case "api-tab":
-            (async () => {
-            await getSpaceAndApi();
-            console.log(inputGatherSpace.value);
-            })()
+            getSpaceAndApi()
            
-
             break;
             case "settings-tab":
-            // getClaimPassword();
+            getSettings()
 
             break;
           case "commands-tab":
@@ -498,7 +742,7 @@ export default defineComponent({
     );
 
      const checkAuth = async (base64Secret: string, base64Iv: string) => {
-          const loginReq = await fetch(`${endpointBase}/check-auth`, {
+          const loginReq = await fetch(`${endpointBase}/api/check-auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -515,10 +759,15 @@ export default defineComponent({
         return false
       }
       return false
-  }
+  } 
+  onMounted(async () => {
+        checkStatus().then((status) => {
+               connectStatus.value = status;
+            });
+  })
 
      onBeforeMount(async () => {
-      const isSetupReq = await getData(`${endpointBase}/is-setup`)
+      const isSetupReq = await getData(`${endpointBase}/api/is-setup`)
       if(isSetupReq.ok){
         const isSetupData = await isSetupReq.json()
         if(isSetupData.setup){
@@ -546,9 +795,6 @@ export default defineComponent({
       route,
       logout,
       curentTab,
-      claimLinksDay,
-      claimLinksMonth,
-      claimLinksYear,
       claimLinksList,
       alertHidden,
       alertTitle,
@@ -567,7 +813,6 @@ export default defineComponent({
       editPastEventModal,
       simpleSpinnerShow,
       viewClaimLinkModal,
-      currentClaimLink,
       origin,
       animateCopyLink,
       inputGatherSpace,
@@ -575,7 +820,17 @@ export default defineComponent({
       saveSpaceAndApi,
       connectBot,
       disconnectBot,
-      checkStatus
+      connectStatus,
+      teleportsInputs,
+      removeTeleportEntry,
+      addNewTeleportEntry,
+      addNewAuthUserEntry,
+      setTeleports,
+      authUsersInputs,
+      removeAuthUserEntry,
+      saveSettings,
+      savePOAPLinks,
+      theme
     };
   },
 })

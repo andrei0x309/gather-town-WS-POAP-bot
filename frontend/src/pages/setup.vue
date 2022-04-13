@@ -7,7 +7,7 @@
   align-items: center;"
     >
       <div class="dark:bg-transparent bg-white">
-        <div class="max-w-screen-2xl px-4 md:px-8 mx-auto">
+        <div class="max-w-screen-2xl px-4 md:px-8 mx-auto py-4 md:py-8">
           <h2
             class="
               text-gray-800 text-2xl
@@ -21,13 +21,13 @@
           >
             Setup Your Gather Bot Pannel
           </h2>
-          <!-- <Alert
+          <Alert
             :hidden="alertHidden"
             :title="alertTitle"
             :message="alertMessage"
             :type="alertType"
             class="m-4"
-          /> -->
+          />
           <form class="max-w-lg border rounded-lg mx-auto">
             <div class="flex flex-col gap-4 p-4 md:p-8">
               <div>
@@ -163,6 +163,72 @@
                   type="text"
                 />
               </div>
+                             <div>
+                <label
+                  for="apiKey"
+                  class="
+                    dark:text-white
+                    inline-block
+                    text-gray-800 text-sm
+                    sm:text-base
+                    mb-2
+                  "
+                  >Backend API hostname</label
+                >
+                <input
+                  v-model="inputBackendHostname"
+                  name="apiKey"
+                  class="
+                    w-full
+                    bg-gray-50
+                    text-gray-800
+                    border
+                    focus:ring
+                    ring-indigo-300
+                    rounded
+                    outline-none
+                    transition
+                    duration-100
+                    px-3
+                    py-2
+                    dark:bg-gray-800 dark:text-white
+                  "
+                  type="text"
+                />
+              </div>
+              <div>
+                <label
+                  for="apiKey"
+                  class="
+                    dark:text-white
+                    inline-block
+                    text-gray-800 text-sm
+                    sm:text-base
+                    mb-2
+                  "
+                  >polygonScanApiKey</label
+                >
+                <input
+                  v-model="inputPolygonScanApiKey"
+                  name="apiKey"
+                  class="
+                    w-full
+                    bg-gray-50
+                    text-gray-800
+                    border
+                    focus:ring
+                    ring-indigo-300
+                    rounded
+                    outline-none
+                    transition
+                    duration-100
+                    px-3
+                    py-2
+                    dark:bg-gray-800 dark:text-white
+                  "
+                  type="text"
+                />
+              </div>
               <button
                 class="
                   block
@@ -196,46 +262,43 @@
 </template>
 
 <script lang="ts">
-import { onBeforeMount, onMounted, defineComponent, ref, reactive, computed, onUnmounted, Ref } from 'vue'
+import { onBeforeMount, onMounted, defineComponent, ref, reactive, computed, onUnmounted, Ref, inject } from 'vue'
 import { useHead, HeadObject } from '@vueuse/head'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { getData } from '../utils'
 
 export default defineComponent({
-  name: 'LoginPage',
+  name: 'SetupPage',
   components: {
   },
   setup() {
-    const apiBase = 'http://localhost:4552'
-    const route = useRoute()
+    const endpointBase: string = inject("endPointBase") as string;
+
+    const alertHidden = ref(true);
+    const alertTitle = ref("");
+    const alertMessage = ref("");
+    const alertType = ref("");
+
     const router = useRouter()
-    const pageNum = ref(route.params.pageNo ? Number(route.params.pageNo) : 1)
-    const inputEmail = ref('')
+    const inputEmail = ref('andrei@flashsoft.eu')
     const inputPassword = ref('')
     const inputGatherSpace = ref('')
     const inputApiKey = ref('')
+    const inputBackendHostname = ref(`${location.protocol}//${location.host}`)
+    const inputPolygonScanApiKey = ref('')
 
     const siteData = reactive({
-      title: `Gather Bot Admin Panel`,
-      description: `Control your Gather Bot`,
+      title: `Gather Bot Admin Panel Setup`,
+      description: `Control your Gather Bot Setup`,
     })
 
-    const setPageNum = (pageNo: number) => {
-      if (pageNo) {
-        if (pageNo > 5 || pageNo < 1) {
-          router.push({ path: '/error/code/404' })
-        } else {
-          pageNum.value = pageNo
-        }
-      }
-    }
 
-    // const showAlertError = (title, message) => {
-    //   alertHidden.value = false;
-    //   alertTitle.value = title;
-    //   alertMessage.value = message;
-    //   alertType.value = "error";
-    // };
+    const showAlertError = (title: string, message: string) => {
+      alertHidden.value = false;
+      alertTitle.value = title;
+      alertMessage.value = message;
+      alertType.value = "error";
+    };
 
     // const showAlertSuccess = (title, message) => {
     //   alertHidden.value = false;
@@ -245,7 +308,7 @@ export default defineComponent({
     // };
 
     onBeforeMount(async () => {
-      const isSetupReq = await getData(`${apiBase}/is-setup`)
+      const isSetupReq = await getData(`${endpointBase}/api/is-setup`)
       if(isSetupReq.ok){
         const isSetupData = await isSetupReq.json()
         if(isSetupData.setup){
@@ -256,14 +319,14 @@ export default defineComponent({
     })
 
     onMounted(async () => {
-      setPageNum(Number(route.params.pageNo))
+       // do nothing
     })
 
     onUnmounted(() => {
       // do nothing
     })
     const setupFn = async () => {
-        const setupReq = await fetch(`${apiBase}/setup`, {
+        const setupReq = await fetch(`${endpointBase}/api/setup`, {
             method: 'POST',
             headers: {
             'Content-Type': 'application/json',
@@ -273,11 +336,15 @@ export default defineComponent({
             password: inputPassword.value,
             gatherSpace: inputGatherSpace.value,
             apiKey: inputApiKey.value,
+            backendHostname: inputBackendHostname.value,
+            polygonScanApiKey: inputPolygonScanApiKey.value
             }),
         })
         const setupData = await setupReq.json()
         if(setupData.success){
             router.push({ path: '/login' })
+        } else {
+            showAlertError("Setup Failed", setupData.error)
         }
     }
 
@@ -287,7 +354,12 @@ export default defineComponent({
     } as unknown as Ref<HeadObject>)
 
     return {
-      pageNum, inputEmail, inputPassword, inputGatherSpace, inputApiKey, setupFn
+      inputEmail, inputPassword, 
+      inputGatherSpace, inputApiKey,
+      inputBackendHostname, setupFn,
+      alertHidden, alertTitle,
+      alertMessage, alertType,
+      inputPolygonScanApiKey
     }
   }
 })

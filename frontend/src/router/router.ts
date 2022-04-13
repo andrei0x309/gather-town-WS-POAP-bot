@@ -18,6 +18,11 @@ const routes = [
     name: 'AdminPage',
     component: () => import('@/pages/admin.vue')
   },
+  {
+    path: '/link/:code',
+    name: 'LinkPage',
+    component: () => import('@/pages/link.vue')
+  },
   // {
   //   path: "/meeting-recording/:id",
   //   name: "SingleMeetingRecording",

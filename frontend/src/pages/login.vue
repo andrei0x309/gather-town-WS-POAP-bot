@@ -143,7 +143,7 @@ export default defineComponent({
     Alert
   },
   setup() {
-    const apiBase = inject("endPointBase");
+    const endpointBase: string = inject("endPointBase") as string;
     const route = useRoute()
     const router = useRouter()
     const pageNum = ref(route.params.pageNo ? Number(route.params.pageNo) : 1)
@@ -171,7 +171,7 @@ export default defineComponent({
 
     
      const checkAuth = async (base64Secret: string, base64Iv: string) => {
-          const loginReq = await fetch(`${apiBase}/check-auth`, {
+          const loginReq = await fetch(`${endpointBase}/api/check-auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -205,7 +205,7 @@ export default defineComponent({
     // };
 
     onBeforeMount(async () => {
-      const isSetupReq = await getData(`${apiBase}/is-setup`)
+      const isSetupReq = await getData(`${endpointBase}/api/is-setup`)
       if(isSetupReq.ok){
         const isSetupData = await isSetupReq.json()
         if(isSetupData.setup){

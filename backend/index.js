@@ -4,7 +4,9 @@ import { fileURLToPath } from 'url'
 import Conf from 'conf'
 import path from 'path'
 import crypto from 'crypto'
-import GatherPOAPBot from '../lib/index.js'
+import { GatherPOAPBot } from '../lib/index.js'
+import { utils } from 'ethers'
+import fastifyStatic from 'fastify-static'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -16,6 +18,10 @@ const app = fastify({
   maxParamLength: 1500
 })
 
+app.register(fastifyStatic, {
+  root: path.join(__dirname, '../frontend/dist')
+})
+
 const cwd = path.resolve(path.join(__dirname, '..', 'db'))
 
 let gatherBot = new GatherPOAPBot(cwd)
@@ -23,7 +29,9 @@ let gatherBot = new GatherPOAPBot(cwd)
 const mainStore = new Conf({ configName: 'main', cwd })
 const teleportStore = new Conf({ configName: 'teleport', cwd })
 const poapLinksStore = new Conf({ configName: 'poap-links', cwd })
-// const settingsStore = new Conf({ configName: 'settings', cwd })
+const ethChallengeStore = new Conf({ configName: 'eth-challenge', cwd })
+const ethLinksStore = new Conf({ configName: 'eth-links', cwd })
+const settingsStore = new Conf({ configName: 'settings', cwd })
 
 const decryptData = async (secret, iv, email) => {
   const pIV = Buffer.from(iv, 'base64')
@@ -85,23 +93,23 @@ const isSetupCheck = () => {
 
 app.register(fastCors, {})
 
-app.get('/is-setup', async (req, reply) => {
+app.get('/api/is-setup', async (req, reply) => {
   reply.send({
     setup: isSetupCheck()
   })
 })
 
-app.post('/setup', async (req, reply) => {
+app.post('/api/setup', async (req, reply) => {
   if (!isSetupCheck()) {
     reply.send({
       error: 'Already setup'
     })
     return
   }
-  const { email, password, gatherSpace, apiKey } = req.body
-  if (!email || !password || !gatherSpace || !apiKey) {
+  const { email, password, gatherSpace, apiKey, backendHostname, polygonScanApiKey } = req.body
+  if (!email || !password || !gatherSpace || !apiKey || !backendHostname || !polygonScanApiKey) {
     reply.send({
-      error: 'Missing required fields'
+      error: 'Missing all required fields!'
     })
     return
   }
@@ -109,12 +117,17 @@ app.post('/setup', async (req, reply) => {
   mainStore.set('password', password)
   mainStore.set('gatherSpace', gatherSpace)
   mainStore.set('apiKey', apiKey)
+  mainStore.set('backendHostname', backendHostname)
+  mainStore.set('polygonScanApiKey', polygonScanApiKey)
+  if (gatherBot) {
+    gatherBot.reloadMainStore()
+  }
   reply.send({
     success: true
   })
 })
 
-app.post('/check-auth', async (req, reply) => {
+app.post('/api/check-auth', async (req, reply) => {
   const secret = req.headers['x-secret']
   const iv = req.headers['x-iv']
   if (!secret || !iv) {
@@ -134,13 +147,74 @@ app.post('/check-auth', async (req, reply) => {
   })
 })
 
-app.all('/logged/:command', {
+app.get('/api/eth-challenge-get/:code', async (req, reply) => {
+  console.log(req.params.code)
+  const code = req.params.code
+  const challenges = ethChallengeStore.get('challenges', [])
+  const filterExpired = challenges.filter((challenge) => {
+    return Date.now() < challenge.expire
+  })
+  ethChallengeStore.set('challenges', filterExpired)
+  console.log(filterExpired)
+  const challenge = filterExpired.find((challenge) => {
+    return String(challenge.code) === String(code)
+  })
+  if (!challenge) {
+    reply.send({
+      error: 'Challenge not found'
+    })
+  } else {
+    reply.send({
+      challenge
+    })
+  }
+})
+
+app.post('/api/eth-verify-challenge', async (req, reply) => {
+  const { code, signature } = req.body
+  const challenges = ethChallengeStore.get('challenges', [])
+  const challenge = challenges.find((challenge) => {
+    return String(challenge.code) === String(code)
+  })
+  const deleteChallenge = challenges.filter((challenge) => {
+    return String(challenge.code) !== String(code)
+  })
+  ethChallengeStore.set('challenges', deleteChallenge)
+  if (!challenge) {
+    reply.send({
+      error: 'Challenge not found'
+    })
+  } else {
+    const { user, message } = challenge
+    const recoveredAcct = await utils.verifyMessage(message, signature)
+    const links = ethLinksStore.get('users', [])
+    const link = links.find((link) => {
+      return link.user === user
+    })
+    if (!link) {
+      links.push({
+        user,
+        address: recoveredAcct
+      })
+    } else {
+      link.address = recoveredAcct
+    }
+    ethLinksStore.set('users', links)
+    reply.send({
+      success: true
+    })
+  }
+})
+
+app.route({
+  method: ['GET', 'POST'],
+  url: '/api/logged/:command',
   preValidation: checkAutHandler,
   handler: async (req, reply) => {
     const command = req.params.command
     switch (command) {
       case 'connect-to-space': {
-        if (!gatherBot || !gatherBot.isConnected) {
+        if (!gatherBot) {
           gatherBot = new GatherPOAPBot(cwd)
           console.log('here')
           do {
@@ -148,7 +222,9 @@ app.all('/logged/:command', {
               setTimeout(resolve, 100)
             })
           } while (!gatherBot)
-          await gatherBot.gatherConnect()
+          if (!gatherBot.isConnected) {
+            await gatherBot.gatherConnect
+          }
         } else {
           await gatherBot.gatherConnect()
         }
@@ -166,39 +242,78 @@ app.all('/logged/:command', {
         break
       }
       case 'check-status': {
+        const status = gatherBot && gatherBot.isConnected()
         reply.send({
-          status: gatherBot.isConnected()
+          status
         })
       }
-      case 'teleport-get': {
-        const teleport = teleportStore.get('teleport', null)
+      case 'teleports-get': {
+        const teleports = teleportStore.get('teleports', [])
         reply.send({
-          teleport
+          teleports
         })
         break
       }
-      case 'teleport-set': {
-        const teleportAdd = req.body.teleport
-        const teleportSet = teleportStore.get('teleport', [])
-        teleportSet.push(teleportAdd)
-        teleportStore.set('teleport', teleportSet)
+      case 'teleports-set': {
+        const teleportAdd = req.body.teleports
+        console.log(teleportAdd)
+        if (teleportAdd && teleportAdd.length < 1) {
+          reply.send({
+            error: 'No teleports set'
+          })
+          return
+        }
+        const neededKeys = ['teleportName', 'map', 'x', 'y']
+        const checkKeys = teleportAdd.some((teleport) => {
+          const missingKeys = neededKeys.filter((key) => {
+            return !teleport[key]
+          })
+          if (missingKeys.length > 0) {
+            return true
+          }
+        })
+        if (checkKeys) {
+          reply.send({
+            error: 'Missing keys'
+          })
+          return
+        }
+        const names = teleportAdd.map((teleport) => {
+          return teleport.teleportName
+        })
+        if (new Set(names).size !== names.length) {
+          reply.send({
+            error: 'Duplicate names'
+          })
+          return
+        }
+        teleportAdd.forEach((teleport) => {
+          teleport.x = Number(teleport.x) || 0
+          teleport.y = Number(teleport.y) || 0
+          teleport.tokenAmount = Number(teleport.tokenAmount) || 0
+        })
+        teleportStore.set('teleports', teleportAdd)
         reply.send({
           success: true
         })
         break
       }
       case 'poap-links-get': {
-        const poapLinks = poapLinksStore.get('poap-links', null)
+        const links = poapLinksStore.get('links', [])
         reply.send({
-          poapLinks
+          links
         })
         break
       }
       case 'poap-links-set': {
-        const poapLinksAdd = req.body.poapLinks
-        const poapLinksSet = poapLinksStore.get('poap-links', [])
-        poapLinksSet.push(poapLinksAdd)
-        poapLinksStore.set('poap-links', poapLinksSet)
+        const poapLinksAdd = req.body.links
+        if (links && links.length < 1) {
+          reply.send({
+            error: 'No links to save or `links` field not set'
+          })
+          return
+        }
+        poapLinksStore.set('links', poapLinksSet)
         reply.send({
           success: true
         })
@@ -226,8 +341,47 @@ app.all('/logged/:command', {
         reply.send({
           success: true
         })
+        break
       }
-
+      case 'settings-get': {
+        const authUsers = settingsStore.get('authUsers', [])
+        const settings = {
+          authUsers
+        }
+        reply.send({
+          settings
+        })
+        break
+      }
+      case 'settings-set': {
+        const settings = req.body.settings
+        if (!settings || !settings.authUsers) {
+          reply.send({
+            error: 'No settings provided'
+          })
+          return
+        }
+        const uniqueUsers = []
+        settings.authUsers.forEach((user) => {
+          if (uniqueUsers.includes(user)) {
+            reply.send({
+              error: `Duplicate user: ${user}`
+            })
+            return
+          }
+          uniqueUsers.push(user)
+        })
+        if (settings.authUsers) {
+          settingsStore.set('authUsers', settings.authUsers)
+        }
+        if (gatherBot) {
+          gatherBot.reloadSettings()
+        }
+        reply.send({
+          success: true
+        })
+        break
+      }
       default: {
         reply.status(401).send({
           error: 'Unknown command'
