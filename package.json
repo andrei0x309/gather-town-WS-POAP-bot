@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "build-all": "cd lib && yarn install && cd ../frontend && yarn install && yarn build && cd ../backend && yarn install && cd ../"
   },
   "author": "andrei0x309",
   "license": "MIT",
