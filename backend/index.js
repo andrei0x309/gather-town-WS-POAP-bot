@@ -300,20 +300,33 @@ app.route({
       }
       case 'poap-links-get': {
         const links = poapLinksStore.get('links', [])
+        let mapLinks
+        if (links.length > 0) {
+          mapLinks = links.map((link) => link.url)
+        } else {
+          mapLinks = []
+        }
         reply.send({
-          links
+          links: mapLinks
         })
         break
       }
       case 'poap-links-set': {
         const poapLinksAdd = req.body.links
-        if (links && links.length < 1) {
+        if (poapLinksAdd && poapLinksAdd.length < 1) {
           reply.send({
             error: 'No links to save or `links` field not set'
           })
           return
         }
-        poapLinksStore.set('links', poapLinksSet)
+        const poapLinksToAdd = poapLinksAdd.map((link) => {
+          return {
+            user: '',
+            url: link,
+            used: false
+          }
+        })
+        poapLinksStore.set('links', poapLinksToAdd)
         reply.send({
           success: true
         })
