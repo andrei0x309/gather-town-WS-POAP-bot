@@ -16,7 +16,7 @@ RUN yarn global add pm2
 
 WORKDIR /usr/src/app
 
-COPY --from=build /usr/src/app/gather-town-WS-POAP-bot/frontend/dist/ ./frontent/dist/
+COPY --from=build /usr/src/app/gather-town-WS-POAP-bot/frontend/dist/ ./frontend/dist/
 COPY --from=build /usr/src/app/gather-town-WS-POAP-bot/lib/ ./lib/
 COPY --from=build /usr/src/app/gather-town-WS-POAP-bot/backend/ ./backend/
 

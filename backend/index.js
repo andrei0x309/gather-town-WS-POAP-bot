@@ -19,7 +19,7 @@ const app = fastify({
 })
 
 app.register(fastifyStatic, {
-  root: path.join(__dirname, '../frontend/dist')
+  root: path.join(__dirname, '/../frontend/dist/')
 })
 
 const cwd = path.resolve(path.join(__dirname, '..', 'db'))
