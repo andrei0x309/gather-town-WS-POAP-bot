@@ -10,6 +10,7 @@ RUN apk add git && \
 FROM --platform=linux/amd64 node:16-alpine
 
 ENV NODE_ENV production
+ENV FASTIFY_ADDRESS 0.0.0.0
 
 RUN yarn global add pm2
 
