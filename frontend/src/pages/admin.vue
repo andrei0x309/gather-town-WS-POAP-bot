@@ -659,7 +659,7 @@ export default defineComponent({
         return;
       }
       if(data.links.length > 0){
-        claimLinksList.value = data.poapLinks.join('\n');
+        claimLinksList.value = data.links.join('\n');
       }
     }
     
