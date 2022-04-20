@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-import GatherPOAPBot from './index.js'
+import GatherPOAPBot from './lib/index.js'
 
 dotenv.config()
 

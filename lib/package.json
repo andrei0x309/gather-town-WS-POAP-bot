@@ -1,20 +1,23 @@
 {
-  "name": "poap-gather-ws-bot-full",
+  "name": "poap-gather-ws-bot-lib",
   "version": "1.0.0",
-  "description": "Gather Bot for DM links to users using WS",
-  "main": "bot.js",
+  "description": "Gather Bot Lib",
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint . --fix",
-    "build-all": "cd lib && yarn install && cd ../frontend && yarn install && yarn build && cd ../backend && yarn install && cd ../"
+    "lint": "eslint . --fix"
   },
   "author": "andrei0x309",
   "license": "MIT",
   "dependencies": {
     "@gathertown/gather-game-client": "^32.0.0",
+    "conf": "^10.1.2",
     "dotenv": "^10.0.0",
+    "ethers": "^5.6.2",
     "isomorphic-ws": "^4.0.1",
+    "mongoose": "^6.3.0",
+    "node-fetch": "^3.2.3",
     "simple-node-logger": "^21.8.12",
     "ws": "^8.4.0"
   },
