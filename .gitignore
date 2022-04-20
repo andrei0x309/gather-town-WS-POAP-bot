@@ -6,3 +6,4 @@ node_modules
 currentLINKS.db
 usedLINKS.db
 mockLINKS.db
+main.json
