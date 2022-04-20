@@ -1,9 +1,10 @@
-import { ethChallenge } from '../../lib/mongo-models/GB_ethChallenge.js'
-import { ethLinks } from '../../lib/mongo-models/GB_ethLinks.js'
-import { poapLinks } from '../../lib/mongo-models/GB_poapLinks.js'
-import { teleport } from '../../lib/mongo-models/GB_teleport.js'
-import { settings } from '../../lib/mongo-models/GB_settings.js'
-import { logs } from '../../lib/mongo-models/GB_logs.js'
+import mongoose from 'mongoose'
+import { ethChallengeModel } from '../../lib/mongo-models/GB_ethChallenge.js'
+import { ethLinksModel } from '../../lib/mongo-models/GB_ethLinks.js'
+import { poapLinksModel } from '../../lib/mongo-models/GB_poapLinks.js'
+import { teleportModel } from '../../lib/mongo-models/GB_teleport.js'
+import { settingsModel } from '../../lib/mongo-models/GB_settings.js'
+import { logsModel } from '../../lib/mongo-models/GB_logs.js'
 import { GatherPOAPBot } from '../../lib/index.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -14,7 +15,31 @@ const __dirname = path.dirname(__filename)
 const cwd = path.resolve(path.join(__dirname, '../..', 'db'))
 
 export const mainStore = new Conf({ configName: 'main', cwd })
-export let gatherBot = new GatherPOAPBot(cwd)
+
+mongoose.connection.on('connected', () => {
+  console.log(`Mongoose default connection open to ${MONGODB_URL.split('@')[1]}`)
+})
+mongoose.connection.on('error', console.error.bind(console, 'Mongoose default connection error:'))
+mongoose.connection.on('disconnected', () => {
+  console.log('Mongoose default connection disconnected')
+})
+const MONGODB_URL = mainStore.get('dbConnectionString', null)
+const mongooseConnection = await mongoose.connect(MONGODB_URL)
+process.on('SIGINT', () => {
+  mongoose.connection.close(() => {
+    console.log('Mongoose default connection disconnected through app termination')
+  })
+  process.exit(0)
+})
+
+const ethChallenge = ethChallengeModel(mongoose)
+const ethLinks = ethLinksModel(mongoose)
+const poapLinks = poapLinksModel(mongoose)
+const teleport = teleportModel(mongoose)
+const settings = settingsModel(mongoose)
+const logs = logsModel(mongoose)
+
+export let gatherBot = new GatherPOAPBot(cwd, 'mongodb', { ethChallenge, ethLinks, poapLinks, teleport, settings, logs })
 
 export const ethChallengeGet = async (req, reply) => {
   const code = req.params.code
@@ -63,11 +88,12 @@ export const ethVerifyChallenge = async (req, reply) => {
 }
 
 export const authEndpoints = async (req, reply) => {
+  console.log(req.params)
   const command = req.params.command
   switch (command) {
     case 'connect-to-space': {
       if (!gatherBot) {
-        gatherBot = new GatherPOAPBot(cwd)
+        gatherBot = new GatherPOAPBot(cwd, 'mongodb', { ethChallenge, ethLinks, poapLinks, teleport, settings, logs })
         do {
           await new Promise((resolve) => {
             setTimeout(resolve, 100)
@@ -174,6 +200,7 @@ export const authEndpoints = async (req, reply) => {
           used: false
         }
       })
+      // console.log(poapLinksToAdd)
       await poapLinks.deleteMany({}).exec()
       await poapLinks.insertMany(poapLinksToAdd)
       reply.send({
@@ -239,6 +266,9 @@ export const authEndpoints = async (req, reply) => {
             }
           }
         )
+      }
+      if (gatherBot) {
+        await gatherBot.reloadSettings()
       }
       reply.send({
         success: true

@@ -7,6 +7,7 @@ import crypto from 'crypto'
 import { utils } from 'ethers'
 import fastifyStatic from 'fastify-static'
 
+let mongoose = null
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -18,7 +19,13 @@ const app = fastify({
 })
 
 app.register(fastifyStatic, {
-  root: path.join(__dirname, '/../frontend/dist/')
+  root: path.join(__dirname, '/../frontend/dist/'),
+  allowedPath: (requestPath) => {
+    if (requestPath.includes('/api/')) {
+      return false
+    }
+    return true
+  }
 })
 
 const cwd = path.resolve(path.join(__dirname, '..', 'db'))
@@ -28,25 +35,12 @@ const dbType = mainStore.get('dbType', null)
 
 let controllers = {}
 if (dbType === 'mongodb') {
-  const mongoose = (await import('mongoose')).default
-  const MONGODB_URL = mainStore.get('dbConnectionString', null)
-  const mongooseConnection = mongoose.connect(MONGODB_URL)
-  mongoose.connection.on('connected', () => {
-    console.log(`Mongoose default connection open to ${MONGODB_URL.split('@')[1]}`)
-  })
-  mongoose.connection.on('error', console.error.bind(console, 'Mongoose default connection error:'))
-  mongoose.connection.on('disconnected', () => {
-    console.log('Mongoose default connection disconnected')
-  })
-  process.on('SIGINT', () => {
-    mongoose.connection.close(() => {
-      console.log('Mongoose default connection disconnected through app termination')
-    })
-    process.exit(0)
-  })
   controllers = { ...(await import('./controllers/mongo.js')) }
 } else if (dbType === 'file') {
   controllers = { ...(await import('./controllers/file.js')) }
+} else {
+  console.log(`No database type set, dbType is: ${dbType} supported types are: mongodb, file`)
+  process.exit(1)
 }
 
 const decryptData = async (secret, iv, email) => {
@@ -75,30 +69,32 @@ const checkAuth = async (secret, iv, email) => {
   return password === decrypted
 }
 
-const checkAutHandler = async (req, reply, done) => {
+const checkAutHandler = (req, reply, done) => {
   const secret = req.headers['x-secret']
   const iv = req.headers['x-iv']
   if (!secret || !iv) {
     reply.send({
       error: 'No secret or iv'
     })
-    return done()
+    return
   }
   const email = mainStore.get('email', null)
   if (!email) {
     reply.send({
       error: 'No email set on server auth error'
     })
-    return done()
+    return
   }
 
-  if (!checkAuth(secret, iv, email)) {
-    reply.send({
-      error: 'Invalid secret'
-    })
-    return done()
-  }
-  done()
+  checkAuth(secret, iv, email).then((result) => {
+    if (!result) {
+      reply.send({
+        error: 'Invalid auth credentials'
+      })
+    } else {
+      done()
+    }
+  })
 }
 
 const isSetupCheck = () => {
@@ -123,7 +119,16 @@ app.post('/api/setup', async (req, reply) => {
     return
   }
   const { email, password, gatherSpace, apiKey, backendHostname, polygonScanApiKey } = req.body
-  if (!email || !password || !gatherSpace || !apiKey || !backendHostname || !polygonScanApiKey) {
+  if (
+    !email ||
+    !password ||
+    !gatherSpace ||
+    !apiKey ||
+    !backendHostname ||
+    !polygonScanApiKey ||
+    !dbType ||
+    (dbType === 'mongodb' && !dbConnectionString)
+  ) {
     reply.send({
       error: 'Missing all required fields!'
     })
@@ -135,6 +140,8 @@ app.post('/api/setup', async (req, reply) => {
   mainStore.set('apiKey', apiKey)
   mainStore.set('backendHostname', backendHostname)
   mainStore.set('polygonScanApiKey', polygonScanApiKey)
+  mainStore.set('dbType', dbType)
+  mainStore.set('dbConnectionString', dbConnectionString)
   if (controllers.gatherBot) {
     controllers.gatherBot.reloadMainStore()
   }

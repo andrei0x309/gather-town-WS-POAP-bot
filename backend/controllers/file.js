@@ -253,7 +253,7 @@ export const authEndpoints = async (req, reply) => {
         settingsStore.set('authUsers', settings.authUsers)
       }
       if (gatherBot) {
-        gatherBot.reloadSettings()
+        await gatherBot.reloadSettings()
       }
       reply.send({
         success: true

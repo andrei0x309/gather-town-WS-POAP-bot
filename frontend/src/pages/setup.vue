@@ -229,6 +229,49 @@
                   type="text"
                 />
               </div>
+            <div>
+            <o-field label="Grouped">
+                  <o-select v-model="inputDbType" placeholder="Select Database">
+                    <optgroup label="Black Sails">
+                      <option value="file">File DB</option>
+                      <option value="mongodb">MongoDB</option>
+                    </optgroup>
+                  </o-select>
+                </o-field>
+            </div>
+          <div v-if="inputDbType == 'mongodb'">
+                <label
+                  for="apiKey"
+                  class="
+                    dark:text-white
+                    inline-block
+                    text-gray-800 text-sm
+                    sm:text-base
+                    mb-2
+                  "
+                  >Mongo Connection String</label
+                >
+                <input
+                  v-model="inputDbConnString"
+                  name="apiKey"
+                  class="
+                    w-full
+                    bg-gray-50
+                    text-gray-800
+                    border
+                    focus:ring
+                    ring-indigo-300
+                    rounded
+                    outline-none
+                    transition
+                    duration-100
+                    px-3
+                    py-2
+                    dark:bg-gray-800 dark:text-white
+                  "
+                  type="text"
+                />
+              </div>
               <button
                 class="
                   block
@@ -286,6 +329,8 @@ export default defineComponent({
     const inputApiKey = ref('')
     const inputBackendHostname = ref(`${location.protocol}//${location.host}`)
     const inputPolygonScanApiKey = ref('')
+    const inputDbType = ref('file')
+    const inputDbConnString = ref('dbConnectionString')
 
     const siteData = reactive({
       title: `Gather Bot Admin Panel Setup`,
@@ -337,7 +382,9 @@ export default defineComponent({
             gatherSpace: inputGatherSpace.value,
             apiKey: inputApiKey.value,
             backendHostname: inputBackendHostname.value,
-            polygonScanApiKey: inputPolygonScanApiKey.value
+            polygonScanApiKey: inputPolygonScanApiKey.value,
+            dbType: inputDbType,
+            dbConnectionString: inputDbConnString,
             }),
         })
         const setupData = await setupReq.json()
@@ -359,7 +406,8 @@ export default defineComponent({
       inputBackendHostname, setupFn,
       alertHidden, alertTitle,
       alertMessage, alertType,
-      inputPolygonScanApiKey
+      inputPolygonScanApiKey,
+      inputDbType, inputDbConnString
     }
   }
 })
