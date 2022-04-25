@@ -163,6 +163,7 @@ export const authEndpoints = async (req, reply) => {
         })
         return
       }
+      await teleport.deleteMany({}).exec()
       teleportAdd.forEach(async (t) => {
         t.x = Number(t.x) || 0
         t.y = Number(t.y) || 0
